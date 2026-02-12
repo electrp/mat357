@@ -50,7 +50,7 @@ def depress_cubic_const_a(b, c, d) -> tuple[float, float]:
 
     c1 = -h2 * 3 + c
     d1 = 2 * h3 - c * b / 3 + d
-    return c1, d1
+    return c1, d1 
 
 # Gives c and d
 def depress_cubic(a, b, c, d) -> tuple[float, float]:
@@ -104,12 +104,10 @@ a = cube_root( )... gosh so much typing
 """
 
 import math
-def roor(p_, q_):
+def root(p_, q_):
     qot = q_/2
     big_term = math.sqrt(q_**2/4 + p_**3/27)
     return (-qot + big_term)**(1/3) + (-qot - big_term)**(1/3)
-
-
 
 
 """
@@ -128,7 +126,6 @@ If our disc is 0, because we're using depressed cubics we have one simple root a
 def disc(a, b, c, d) -> float:
     # Δ = 18abcd – 4b³d + b²c² – 4ac³ – 27a²d².
     return 1
-    
 
 # returns t1 (simple), and t2 (=t3, do)
 def zero_disc(q, p) -> tuple[float, float]: # both of these roots should be real8
@@ -138,10 +135,15 @@ def zero_disc(q, p) -> tuple[float, float]: # both of these roots should be real
 def depressed_disc(c,d) -> float:
     return disc(1, 0, c, d)
 
+""" root cases
+Δ > 0, the cubic has three distinct real roots
+Δ < 0, the cubic has one real root and two non-real complex conjugate roots.
+Δ = 0 the cubic has a multiple root (one simple and one double root)
+"""
 
 def main():
     print(depressed_disc(1,2))
-    print(roor(1,2))
+    print(root(1,2))
 
 
 
