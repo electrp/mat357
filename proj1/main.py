@@ -1,3 +1,6 @@
+from typing import Callable
+import math
+
 # a is always 1, returns b, c, d
 def make_lagrange_cubic(x0, x1, x2, x3, y0, y1, y2, y3) -> tuple[float, float, float]:
     # Precompute differences
@@ -7,7 +10,7 @@ def make_lagrange_cubic(x0, x1, x2, x3, y0, y1, y2, y3) -> tuple[float, float, f
     xd21 = x2 - x1
     xd31 = x3 - x1
     xd32 = x3 - x2
-    
+
     # Precompute divisors
     l0d = -xd10 * -xd20 * -xd30
     l1d =  xd10 * -xd21 * -xd31
@@ -43,6 +46,7 @@ def make_lagrange_cubic(x0, x1, x2, x3, y0, y1, y2, y3) -> tuple[float, float, f
 
     return b, c, d
 
+
 def depress_cubic_const_a(b, c, d) -> tuple[float, float]:
     h1 = b / 3
     h2 = h1 * h1
@@ -52,6 +56,7 @@ def depress_cubic_const_a(b, c, d) -> tuple[float, float]:
     d1 = 2 * h3 - c * b / 3 + d
     return c1, d1 
 
+
 # Gives c and d
 def depress_cubic(a, b, c, d) -> tuple[float, float]:
     # Scale so a == 1, x = t - b/3
@@ -59,7 +64,7 @@ def depress_cubic(a, b, c, d) -> tuple[float, float]:
     c1 = c / a
     d1 = d / a
     return depress_cubic_const_a(b1, c1, d1)
-    
+
     # h1 = b /(3 * a)
     # h2 = h1 * h1
     # h3 = h1 * h2
@@ -70,19 +75,6 @@ def depress_cubic(a, b, c, d) -> tuple[float, float]:
 
 
 
-
-"""
-Discriminant Rules:
-
-Δ = 18abcd – 4b³d + b²c² – 4ac³ – 27a²d².
-If Δ > 0, the cubic has three distinct real roots
-If Δ < 0, the cubic has one real root and two non-real complex conjugate roots.
-else it has a multiple root
-whahhahahhahat is a multiple root?
-"The multiplicity of a root is the number of occurrences of this root in the complete factorization of the polynomial, by means of the fundamental theorem of algebra." (https://en.wikipedia.org/wiki/Multiplicity_(mathematics)#Multiplicity_of_a_root_of_a_polynomial)t
-If our disc is 0, because we're using depressed cubics we have one simple root and a double root
-(omg furthermore) bc we're using depressed cubics if the discriminant is 0 then we havedisc(a, b, c, d) -> float:
-"""
 
 
 # returns discriminant of a depressed cubic
@@ -119,7 +111,6 @@ def cardano(p_, q_) -> list[float]:
     return [cbrt(u) + cbrt(v)]
 
 
-import math
 def trig_roots(p_, q_) -> list[float]:
     """
     2*sqrt(-p/3) * cos( 1/3*arccos(3q/2p * sqrt(-3/p)) - k2pi/3 )
@@ -141,7 +132,7 @@ def zero_disc_roots(p, q) -> tuple[float, float]: # both of these roots should b
     return 3*q/p, -3*q/(2*p)
 
 
-def depressed_roots(p_, q_):
+def depressed_cubic_roots(p_, q_):
     """ root cases
     Δ > 0, the cubic has three distinct real roots
     Δ < 0, the cubic has one real root and two non-real complex conjugate roots.
@@ -152,15 +143,35 @@ def depressed_roots(p_, q_):
     else:                               return cardano(p_, q_)
 
 
+# implement this
+def rootfind(f_:Callable, a_:float, b_:float, max_iter_:int=100, tol_:float=1e-12) -> float:
+    """
+    given sample function and range [a,b] to search for roots, find a root
+    """
+
+    """
+    ...
+    """
+
+
+    # get four points
+    xs = [a_, a_+(b_-a_)/3, a_+2*(b_-a_)/3, b_]
+    ys = [f_(x) for x in xs]
+
+    # create surrogate cubic (depressed cubic from lagrange polynomial)
+    p, q = depress_cubic_const_a(*make_lagrange_cubic(*(xs+ys)))
+
+
 
 
 def main():
-    import sys
-    P, Q = [float(v) for v in sys.argv[1:]]
-    print(depressed_roots(P,Q))
-
-
-
+    # import sys
+    # P, Q = [float(v) for v in sys.argv[1:]]
+    # print(depressed_cubic_roots(P,Q))
+    def a(x):
+        return x
+    l, h = -1, 1
+    rootfind(a, l, h)
 
 
 if __name__ == "__main__":
