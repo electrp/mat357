@@ -127,8 +127,8 @@ def trig_roots(p_, q_) -> list[float]:
     l = 2*(-p_/3)**0.5
 
     # magic. (clipping & some algebra but huh?)
-    m = 2 * (-p / 3) ** 0.5
-    arg = max(-1.0, min(1.0, 3 * q / (p * m)))
+    m = 2 * (-p_ / 3) ** 0.5
+    arg = max(-1.0, min(1.0, 3 * q_ / (p_ * m)))
 
     a = math.acos(arg)/3
     k = 2*math.pi/3     # k will be 0, 1 ,2 and multiplied in loop in a moment
@@ -155,9 +155,9 @@ def depressed_roots(p_, q_):
 
 
 def main():
-    P, Q = -5,1
+    import sys
+    P, Q = [float(v) for v in sys.argv[1:]]
     print(depressed_roots(P,Q))
-    print(vibe_cubic_roots(P,Q))
 
 
 
