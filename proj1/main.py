@@ -68,46 +68,7 @@ def depress_cubic(a, b, c, d) -> tuple[float, float]:
     # d1 = 2 * h3 - c * b / (3 * a * a) + d / a
     # return c1, d1
 
-# https://en.wikipedia.org/wiki/Cubic_equation
 
-""" 
-Algorithm steps:
-
-something until we have 4 points
-
-then:
-- using those 4 points, make a cubic lagrange polynomial
-- depress the cubic (will)
-- use the formula for roots of a depressed cubic
-- pick a root
-    - this is our new x point
-
-the formula for the roots of a depressed cubic:
-x**3 + p*x + q = 0  # this is a depressed cubic
-
-let x = a - b
-then x**3 = (a-b)**3 = a**3 - b**3 - c*a*b*(a-b)
-x**3 = 3*a*b*x-(a**3-b**3) = 0
-
-p = 3*a*b, -q = a**3-b**3
-b = p/3a, -q = a**3-(p**3/(2+a**3))
--a**3*q = (a**3)**2 - p**3/27
-(a**3)**2 + a**3*q - p**3/27
-
-let t = a**3
-t**2 +_q*t - p**3 /27 = 0
-now you have a quadratic in terms of t
-t = -q +/- sqrt(q**2 + (4*p**3)/27)
-
-a**3 = -q/2 +/- sqrt(q**2 /4 + p**3 /27)
-a = cube_root( )... gosh so much typing
-"""
-
-import math
-def root(p_, q_):
-    qot = q_/2
-    big_term = math.sqrt(q_**2/4 + p_**3/27)
-    return (-qot + big_term)**(1/3) + (-qot - big_term)**(1/3)
 
 
 """
@@ -123,27 +84,81 @@ If our disc is 0, because we're using depressed cubics we have one simple root a
 (omg furthermore) bc we're using depressed cubics if the discriminant is 0 then we havedisc(a, b, c, d) -> float:
 """
 
-def disc(a, b, c, d) -> float:
-    # Δ = 18abcd – 4b³d + b²c² – 4ac³ – 27a²d².
-    return 1
 
-# returns t1 (simple), and t2 (=t3, do)
-def zero_disc(q, p) -> tuple[float, float]: # both of these roots should be real8
+# returns discriminant of a depressed cubic
+def depressed_disc(p, q) -> float:
+    """t**3 + pt + q"""
+    return -(4*p**3 + 27*q**2)
+
+
+def close(v_, t_, tol_=1e-12) -> float:
+    return abs(v_-t_) < tol_
+
+
+def sign(v_) -> int:
+    if type(v_) == type((-1)**0.5):
+        v_ = v_.real
+    if close(v_, 0): return 0
+    elif v_ > 0: return 1
+    return -1
+
+
+# https://en.wikipedia.org/wiki/Cubic_equation
+def cardano(p_, q_) -> list[float]:
+    """
+    one real root (u1)**(1/3) + (u2)**(1/3)
+    you have to cube root them but keep their original sign for the
+    summation to get the right answer. I am not entirely sure why
+    that is the case but it is passing our tests.
+    """
+    nqot = -q_/2
+    big_term = (q_**2 /4 + p_**3 /27)**(1/2)
+    u, v = nqot + big_term, nqot - big_term
+    # do the cube root but get rid of the imaginary component from the sqrt if there was one
+    cbrt = lambda x: sign(x) * abs(x) ** (1 / 3) if x != 0 else 0.0
+    return [cbrt(u) + cbrt(v)]
+
+
+import math
+def trig_roots(p_, q_) -> list[float]:
+    """
+    2*sqrt(-p/3) * cos( 1/3*arccos(3q/2p * sqrt(-3/p)) - k2pi/3 )
+    """
+    l = 2*(-p_/3)**0.5
+
+    # magic. (clipping & some algebra but huh?)
+    m = 2 * (-p / 3) ** 0.5
+    arg = max(-1.0, min(1.0, 3 * q / (p * m)))
+
+    a = math.acos(arg)/3
+    k = 2*math.pi/3     # k will be 0, 1 ,2 and multiplied in loop in a moment
+    return [l * math.cos(a - i*k) for i in range(3)]
+
+
+# returns t1 (simple), and t2 (=t3, double root)
+def zero_disc_roots(p, q) -> tuple[float, float]: # both of these roots should be real8
+    if p == q and p == 0: return 0
     return 3*q/p, -3*q/(2*p)
 
 
-def depressed_disc(c,d) -> float:
-    return disc(1, 0, c, d)
+def depressed_roots(p_, q_):
+    """ root cases
+    Δ > 0, the cubic has three distinct real roots
+    Δ < 0, the cubic has one real root and two non-real complex conjugate roots.
+    Δ = 0 the cubic has a multiple root (one simple and one double root, *or* if p = q = 0, root is at 0)
+    """
+    if close(p_, 0) and close(q_,0):    return [0]
+    elif depressed_disc(p_,q_) > 1e-10: return trig_roots(p_, q_)
+    else:                               return cardano(p_, q_)
 
-""" root cases
-Δ > 0, the cubic has three distinct real roots
-Δ < 0, the cubic has one real root and two non-real complex conjugate roots.
-Δ = 0 the cubic has a multiple root (one simple and one double root)
-"""
+
+
 
 def main():
-    print(depressed_disc(1,2))
-    print(root(1,2))
+    P, Q = -5,1
+    print(depressed_roots(P,Q))
+    print(vibe_cubic_roots(P,Q))
+
 
 
 
