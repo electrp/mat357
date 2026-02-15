@@ -171,7 +171,7 @@ def sample_polynomial(x, a, b, c, d):
     return a*x**3 + b*x**2 + c*x + d
 
 
-def rootfind(f_:Callable, a_:float, b_:float, max_iter_:int=100, tol_:float=1e-12) -> tuple[float, list[float]]:
+def rootfind(f_:Callable, a_:float, b_:float, max_iter_:int=100, tol_:float=1e-12) -> tuple[float, int, int, int, int, bool]:
     calls = 0
     def cf(x):
         nonlocal calls
@@ -180,6 +180,7 @@ def rootfind(f_:Callable, a_:float, b_:float, max_iter_:int=100, tol_:float=1e-1
 
     cubic_steps = 0
     bisect_steps = 0
+    failed = False
 
     # get four points
     xs = [a_, a_ + (b_ - a_) / 3, a_ + 2 * (b_ - a_) / 3, b_]
@@ -213,6 +214,7 @@ def rootfind(f_:Callable, a_:float, b_:float, max_iter_:int=100, tol_:float=1e-1
             pos = [(x, y) for x, y in zip(xs, ys) if y > 0]
             neg = [(x, y) for x, y in zip(xs, ys) if y < 0]
             if not pos or not neg:
+                failed = True
                 break
             # Get closest positive and negative points and bisect
             min_pos = min(pos, key=lambda p: abs(p[0]))
@@ -224,7 +226,7 @@ def rootfind(f_:Callable, a_:float, b_:float, max_iter_:int=100, tol_:float=1e-1
 
         # Check tolerance
         if abs(best_y) < tol_:
-            return best, i + 1, calls, cubic_steps, bisect_steps
+            return best, i + 1, calls, cubic_steps, bisect_steps, False
 
         # Replace one of the points
         xs.insert(2, best)
@@ -235,6 +237,7 @@ def rootfind(f_:Callable, a_:float, b_:float, max_iter_:int=100, tol_:float=1e-1
         neg = [(x, y) for x, y in zip(xs, ys) if y < 0]
         if not pos or not neg:
             print("All points on one side, this should not happen")
+            failed = True
             break
         min_pos = min(pos, key=lambda p: abs(p[0]))
         min_neg = min(neg, key=lambda p: abs(p[0]))
@@ -249,7 +252,11 @@ def rootfind(f_:Callable, a_:float, b_:float, max_iter_:int=100, tol_:float=1e-1
 
         last_best = best
 
-    return best, max_iter_, calls, cubic_steps, bisect_steps
+    else:
+        # Loop completed without break or early return — hit max iterations
+        failed = True
+
+    return best, max_iter_, calls, cubic_steps, bisect_steps, failed
 
 
 if __name__ == "__main__":
