@@ -1,6 +1,5 @@
 from typing import Callable
 import math
-import random
 
 # a is always 1, returns b, c, d
 def make_lagrange_cubic(x0, x1, x2, x3, y0, y1, y2, y3) -> tuple[float, float, float, float]:
@@ -59,22 +58,24 @@ def depress_cubic_const_a(b, c, d) -> tuple[float, float]:
     return c1, d1 
 
 
-# Gives c, d
+# Gives c and d
 def depress_cubic(a, b, c, d) -> tuple[float, float]:
+    # Prevents div by 0 cases in linear equations
+    if a == 0:
+        a = .000000001 # 
     # Scale so a == 1, x = t - b/3
-    # b1 = b / a
-    # c1 = c / a
-    # d1 = d / a
-    # return depress_cubic_const_a(b1, c1, d1)
+    b1 = b / a
+    c1 = c / a
+    d1 = d / a
+    return depress_cubic_const_a(b1, c1, d1)
 
-    h1 = b /(3 * a)
-    h2 = h1 * h1
-    h3 = h1 * h2
+    # h1 = b /(3 * a)
+    # h2 = h1 * h1
+    # h3 = h1 * h2
 
-    c1 = c - b * b / (3 * a)
-    d1 = 2 * h3 - c * b / (3 * a * a) + d / a
-    d1 = d + 2 * b * b * b / (27 * a * a) - (b * c) / (3 * a)
-    return c1 / a, d1 / a
+    # c1 = -h2 * 3 + c / a
+    # d1 = 2 * h3 - c * b / (3 * a * a) + d / a
+    # return c1, d1
 
 
 
@@ -156,122 +157,212 @@ def solve_quadratic_formula(a, b, c) -> list[float]:
 
 
 def cubic_roots(xs, ys, tol_: float=1e-8) -> list[float]:
-    # create surrogate cubic (depressed cubic from lagrange polynomial)
     cubic = make_lagrange_cubic(*(xs+ys))
-    print(f"cubic: {cubic}")
-    # Check to make sure it's not of a smaller degree, if we don't it can explode
-    if abs(cubic[0]) < tol_:
-        if abs(cubic[1]) < tol_:
-            # Solve linear
-            return [-cubic[3]/cubic[2]]
-        # Solve quadratic
-        return solve_quadratic_formula(cubic[1], cubic[2], cubic[3])
+    a, b, c, d = cubic
+    if abs(a) < tol_:
+        if abs(b) < tol_:
+            return [-d/c]
+        return solve_quadratic_formula(b, c, d)
     else:
-        # Cubic if it matches best
-        p, q = depress_cubic(*cubic)
-        print(f"depressed: {p}, {q}")
-        depressed_roots = depressed_cubic_roots(p, q)
-        return [v - (cubic[1] / (3 * cubic[0])) for v in depressed_roots]
+        p, q = depress_cubic(a, b, c, d)
+        shift = -b / (3 * a)  # <-- the shift back
+        return [t + shift for t in depressed_cubic_roots(p, q)]
 
 
-def distance_from_bounds(low, high, val):
-    return min(0, val - high, low - val)
-
-# Returns a new xs and ys 
-# This was a very messy way to do this, but the value selection can change convergance
-# greatly. It would take far too long to find the best way to do this
-def adjust_bounds(xs, ys, roots, fn) -> tuple[list[float], list[float]]:
-    # Filter into negative and positive
-    y_pos = [v for v in ys if v >= 0]
-    y_neg = [v for v in ys if v < 0]
-
-    # Calculate our best bounds
-    y_pos_bound = None
-    y_neg_bound = None
-
-    if len(y_pos) == 0:
-        y_pos_bound = max(ys)
-    else:
-        y_pos_bound = min(y_pos)
-    if len(y_neg) == 0:
-        y_neg_bound = min(ys)
-    else:
-        y_neg_bound = max(y_neg)
-
-    y_pos_bound_idx = ys.index(y_pos_bound)
-    y_neg_bound_idx = ys.index(y_neg_bound)
-    y_pos_bound_x = xs[y_pos_bound_idx]
-    y_neg_bound_x = xs[y_neg_bound_idx]
-    x_min_bound = min(y_pos_bound_x, y_neg_bound_x)
-    x_max_bound = max(y_pos_bound_x, y_neg_bound_x)
-
-    # Get our remaining indices
-    remaining = [0, 1, 2, 3]
-    remaining.remove(y_pos_bound_idx)
-    remaining.remove(y_neg_bound_idx)
-
-    r0_y = ys[remaining[0]]
-    r1_y = ys[remaining[1]]
-
-    # Pick our closest one
-    r_selected = None
-    if abs(r0_y) < abs(r1_y):
-        r_selected = remaining[0]
-    else:
-        r_selected = remaining[1]
-
-    # Select our root (dosn't matter too much right now)
-    root = roots[0]
-
-    return \
-        [y_pos_bound_x, y_neg_bound_x, xs[r_selected], root], \
-        [y_pos_bound, y_neg_bound, ys[r_selected], fn(root)]
-
-
-# implement this
-def rootfind(f_:Callable, a_:float, b_:float, max_iter_:int=100, tol_:float=1e-12) -> float:
+def rootfind(f_: Callable, a_: float, b_: float, max_iter_: int = 100, tol_: float = 1e-12, debug: bool = True) -> float:
     """
     given sample function and range [a,b] to search for roots, find a root
     """
+    import numpy as np
 
-    """
-    ...
-    """
-
+    if debug:
+        import matplotlib.pyplot as plt
 
     # get four points
-    xs = [a_, a_+(b_-a_)/3, a_+2*(b_-a_)/3, b_]
+    xs = [a_, a_ + (b_ - a_) / 3, a_ + 2 * (b_ - a_) / 3, b_]
     ys = [f_(x) for x in xs]
 
-    best_x = None
-    best_y = None
+    # Validate bracket
+    if sign(ys[0]) == sign(ys[-1]):
+        print("Warning: no sign change detected in initial bracket")
+
+    best = 0
+    best_y = 0
 
     for i in range(max_iter_):
-        # Get roots
+        # Sort points by x to keep them ordered
+        combined = sorted(zip(xs, ys), key=lambda p: p[0])
+        xs = [p[0] for p in combined]
+        ys = [p[1] for p in combined]
+
+        cubic = make_lagrange_cubic(*(xs + ys))
+        a_c, b_c, c_c, d_c = cubic
         roots = cubic_roots(xs, ys)
-        print(f"roots: {roots}")
 
-        # Check and see if any of our roots are good
-        for root in roots:
-            root_y = abs(f_(root))
-            if best_y == None or root_y < best_y:
-                best_y = root_y
-                best_x = root
-        if best_y < tol_:
-            print(f"steps: {i}")
-            return best_x
+        # Filter to roots inside the current interval
+        filtered = [root for root in roots if xs[0] <= root <= xs[3]]
 
-        print(f"{xs}")
-        print(f"{ys}")
-        # Reset bounds and continue
-        xs, ys = adjust_bounds(xs, ys, roots, f_)
-        print(f"{xs}")
-        print(f"{ys}")
-        print("____")
+        used_method = "cubic"
+        if filtered:
+            evals = [(root, f_(root)) for root in filtered]
+            best, best_y = min(evals, key=lambda pair: abs(pair[1]))
+        else:
+            # Cubic root out of bounds — use Newton step from cubic's derivative
+            best_sample_idx = min(range(4), key=lambda j: abs(ys[j]))
+            x_near = xs[best_sample_idx]
+            y_near = ys[best_sample_idx]
+
+            deriv = 3 * a_c * x_near**2 + 2 * b_c * x_near + c_c
+
+            if abs(deriv) > 1e-15:
+                newton_step = x_near - y_near / deriv
+                if xs[0] <= newton_step <= xs[3]:
+                    best = newton_step
+                    best_y = f_(best)
+                    used_method = "newton"
+                else:
+                    best = max(xs[0], min(xs[3], newton_step))
+                    if best == xs[0] or best == xs[3]:
+                        for j in range(3):
+                            if sign(ys[j]) != sign(ys[j + 1]):
+                                best = (xs[j] + xs[j + 1]) / 2
+                                break
+                    best_y = f_(best)
+                    used_method = "newton_clamped"
+            else:
+                best = (xs[0] + xs[3]) / 2
+                for j in range(3):
+                    if sign(ys[j]) != sign(ys[j + 1]):
+                        best = (xs[j] + xs[j + 1]) / 2
+                        break
+                best_y = f_(best)
+                used_method = "bisection"
+
+        if debug:
+            print(f"--- Iter {i} ---")
+            print(f"  Method: {used_method.upper()}")
+            print(f"  Window: [{xs[0]:.10f}, {xs[3]:.10f}]  size={xs[3] - xs[0]:.2e}")
+            print(f"  Current points:")
+            for j, (xi, yi) in enumerate(zip(xs, ys)):
+                print(f"    x{j}={xi:.10f}  y{j}={yi:.2e}")
+            print(f"  All roots: {[f'{r:.10f}' for r in roots]}")
+            print(f"  In-bounds: {[f'{r:.10f}' for r in filtered]}")
+            print(f"  Chosen: x={best:.10f}  f(x)={best_y:.2e}")
+            print()
+
+            fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+            ax1, ax2 = axes
+
+            margin = (xs[3] - xs[0]) * 0.15
+            plot_xs = np.linspace(xs[0] - margin, xs[3] + margin, 300)
+            plot_ys_actual = [f_(x) for x in plot_xs]
+            plot_ys_cubic = [a_c * x**3 + b_c * x**2 + c_c * x + d_c for x in plot_xs]
+
+            ax1.plot(plot_xs, plot_ys_actual, 'b-', label='f(x)', linewidth=2)
+            ax1.plot(plot_xs, plot_ys_cubic, 'r--', label='cubic fit', linewidth=1.5)
+            ax1.axhline(y=0, color='gray', linestyle='-', linewidth=0.5)
+            ax1.scatter(xs, ys, color='green', zorder=5, s=80, label='sample points')
+
+            colors = {'cubic': 'purple', 'newton': 'orange', 'newton_clamped': 'darkorange', 'bisection': 'red'}
+            ax1.scatter([best], [best_y], color=colors.get(used_method, 'red'), zorder=6, s=120,
+                       marker='*', label=used_method)
+
+            ax1.set_title(f'Iter {i} — {used_method.upper()}')
+            ax1.legend(fontsize=8)
+            ax1.set_xlabel('x')
+            ax1.set_ylabel('y')
+
+            info_text = (
+                f"Iteration: {i}\n"
+                f"Window: [{xs[0]:.8f}, {xs[3]:.8f}]\n"
+                f"Window size: {xs[3] - xs[0]:.2e}\n"
+                f"Cubic coeffs: a={a_c:.4e}, b={b_c:.4e}, c={c_c:.4e}, d={d_c:.4e}\n"
+                f"\nAll roots: {[f'{r:.8f}' for r in roots]}\n"
+                f"In-bounds roots: {[f'{r:.8f}' for r in filtered]}\n"
+                f"\nChosen x: {best:.10f}\n"
+                f"f(x): {best_y:.2e}\n"
+                f"Method: {used_method}\n"
+                f"\nSample points:\n"
+            )
+            for j, (xi, yi) in enumerate(zip(xs, ys)):
+                info_text += f"  x{j}={xi:.8f}  y{j}={yi:.2e}\n"
+
+            ax2.text(0.05, 0.95, info_text, transform=ax2.transAxes,
+                    fontsize=9, verticalalignment='top', fontfamily='monospace')
+            ax2.axis('off')
+            ax2.set_title('Debug Info')
+
+            plt.tight_layout()
+            plt.savefig(f'H:\\CodeQuiz\\mat357\\proj1\\tmp/rootfind_iter_{i:03d}.png', dpi=100)
+            plt.close()
+
+        # Check tolerance
+        if abs(best_y) < tol_:
+            if debug:
+                print(f"Converged at iteration {i}")
+            return best
+
+        # Insert best into sorted position and maintain 4 points with bracket
+        xs.append(best)
+        ys.append(best_y)
+        combined = sorted(zip(xs, ys), key=lambda p: p[0])
+        xs = [p[0] for p in combined]
+        ys = [p[1] for p in combined]
+
+        # We now have 5 points — drop the one that's least useful
+        sign_change_idx = None
+        smallest_gap = float('inf')
+        for j in range(len(xs) - 1):
+            if sign(ys[j]) != sign(ys[j + 1]):
+                gap = xs[j + 1] - xs[j]
+                if gap < smallest_gap:
+                    smallest_gap = gap
+                    sign_change_idx = j
+
+        if sign_change_idx is not None:
+            keep = {sign_change_idx, sign_change_idx + 1}
+            remaining = [j for j in range(5) if j not in keep]
+            remaining.sort(key=lambda j: abs(ys[j]))
+            keep.update(remaining[:2])
+            keep = sorted(keep)
+            xs = [xs[j] for j in keep]
+            ys = [ys[j] for j in keep]
+        else:
+            indexed = sorted(range(5), key=lambda j: abs(ys[j]))
+            keep = sorted(indexed[:4])
+            xs = [xs[j] for j in keep]
+            ys = [ys[j] for j in keep]
+
+        # Redistribute straggler: if one endpoint is disproportionately far
+        # from the tight cluster near the root, pull it in closer
+        for j in range(len(xs) - 1):
+            if sign(ys[j]) != sign(ys[j + 1]):
+                sc_gap = xs[j + 1] - xs[j]
+                break
+        else:
+            sc_gap = xs[3] - xs[0]
+
+        redistrib_ratio = 10
+        dist_left = xs[1] - xs[0]
+        dist_right = xs[3] - xs[2]
+
+        if dist_right > redistrib_ratio * sc_gap and sc_gap > 0:
+            # Right endpoint is a straggler — pull it in
+            xs[3] = xs[2] + 2 * sc_gap
+            ys[3] = f_(xs[3])
+            if debug:
+                print(f"  >> Redistributed right endpoint to {xs[3]:.10f}")
+        elif dist_left > redistrib_ratio * sc_gap and sc_gap > 0:
+            # Left endpoint is a straggler — pull it in
+            xs[0] = xs[1] - 2 * sc_gap
+            ys[0] = f_(xs[0])
+            if debug:
+                print(f"  >> Redistributed left endpoint to {xs[0]:.10f}")
 
     print(f"Stopped at max iterations")
-    return best_x
-
+    if debug:
+        print(f"Final best: x={best:.10f}, f(x)={best_y:.2e}")
+    return best
 
 
 def main():
@@ -280,7 +371,7 @@ def main():
     # print(depressed_cubic_roots(P,Q))
     def a(x):
         return 19 * math.sin(x + 2) + x/2
-    l, h = -3, 1
+    l, h = -1, 3
     root = rootfind(a, l, h)
     root_v = a(root);
     print(f"{root}, {root_v}")
