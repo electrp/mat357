@@ -2,7 +2,7 @@ from typing import Callable
 import math
 
 # a is always 1, returns b, c, d
-def make_lagrange_cubic(x0, x1, x2, x3, y0, y1, y2, y3) -> tuple[float, float, float]:
+def make_lagrange_cubic(x0, x1, x2, x3, y0, y1, y2, y3) -> tuple[float, float, float, float]:
     # Precompute differences
     xd10 = x1 - x0
     xd20 = x2 - x0
@@ -11,11 +11,11 @@ def make_lagrange_cubic(x0, x1, x2, x3, y0, y1, y2, y3) -> tuple[float, float, f
     xd31 = x3 - x1
     xd32 = x3 - x2
 
-    # Precompute divisors
-    l0d = -xd10 * -xd20 * -xd30
-    l1d =  xd10 * -xd21 * -xd31
-    l2d =  xd20 *  xd21 * -xd32
-    l3d =  xd30 *  xd31 *  xd32
+    # Precompute divisors with y
+    l0_m = y0 / (-xd10 * -xd20 * -xd30)
+    l1_m = y1 / (xd10 * -xd21 * -xd31)
+    l2_m = y2 / (xd20 *  xd21 * -xd32)
+    l3_m = y3 / (xd30 *  xd31 *  xd32)
 
     # Helpers
     xmult = x0 * x1 * x2 * x3
@@ -28,23 +28,24 @@ def make_lagrange_cubic(x0, x1, x2, x3, y0, y1, y2, y3) -> tuple[float, float, f
     x23 = x2 * x3
 
     # Final results 
+    a = l0_m + l1_m + l2_m + l3_m
     b = \
-        (-xaccum + x0) / l0d + \
-        (-xaccum + x1) / l1d + \
-        (-xaccum + x2) / l2d + \
-        (-xaccum + x3) / l3d 
+        (-xaccum + x0) * l0_m + \
+        (-xaccum + x1) * l1_m + \
+        (-xaccum + x2) * l2_m + \
+        (-xaccum + x3) * l3_m 
     c = \
-        (x12 + x23 + x13) / l0d + \
-        (x02 + x23 + x03) / l1d + \
-        (x01 + x13 + x03) / l2d + \
-        (x01 + x02 + x12) / l3d
+        (x12 + x23 + x13) * l0_m + \
+        (x02 + x23 + x03) * l1_m + \
+        (x01 + x13 + x03) * l2_m + \
+        (x01 + x02 + x12) * l3_m
     d = \
-        x12 * x3 / l0d + \
-        x02 * x3 / l1d + \
-        x01 * x3 / l2d + \
-        x01 * x2 / l3d
+        -x12 * x3 * l0_m + \
+        -x02 * x3 * l1_m + \
+        -x01 * x3 * l2_m + \
+        -x01 * x2 * l3_m
 
-    return b, c, d
+    return a, b, c, d
 
 
 def depress_cubic_const_a(b, c, d) -> tuple[float, float]:
@@ -59,6 +60,9 @@ def depress_cubic_const_a(b, c, d) -> tuple[float, float]:
 
 # Gives c and d
 def depress_cubic(a, b, c, d) -> tuple[float, float]:
+    # Prevents div by 0 cases in linear equations
+    if a == 0:
+        a = .000000001 # 
     # Scale so a == 1, x = t - b/3
     b1 = b / a
     c1 = c / a
@@ -142,6 +146,32 @@ def depressed_cubic_roots(p_, q_):
     elif depressed_disc(p_,q_) > 1e-10: return trig_roots(p_, q_)
     else:                               return cardano(p_, q_)
 
+def solve_quadratic_formula(a, b, c) -> list[float]:
+    b1 = -b / (2 * a)
+    inner = b * b - (4 * a * c)
+    if inner <= 0:
+        # Return our x minima if theres no root
+        return [b1]
+    variant = math.sqrt(inner) / (2 * a)
+    return [b1 + variant, b1 - variant]
+
+
+def cubic_roots(xs, ys, tol_: float=1e-8) -> list[float]:
+    # create surrogate cubic (depressed cubic from lagrange polynomial)
+    cubic = make_lagrange_cubic(*(xs+ys))
+    # Check to make sure it's not of a smaller degree, if we don't it can explode
+    if abs(cubic[0]) < tol_:
+        if abs(cubic[1]) < tol_:
+            # Solve linear
+            return [-cubic[3]/cubic[2]]
+        # Solve quadratic
+        return solve_quadratic_formula(cubic[1], cubic[2], cubic[3])
+    else:
+        # Cubic if it matches best
+        p, q = depress_cubic(*cubic)
+        return depressed_cubic_roots(p, q)
+
+
 
 # implement this
 def rootfind(f_:Callable, a_:float, b_:float, max_iter_:int=100, tol_:float=1e-12) -> float:
@@ -157,10 +187,33 @@ def rootfind(f_:Callable, a_:float, b_:float, max_iter_:int=100, tol_:float=1e-1
     # get four points
     xs = [a_, a_+(b_-a_)/3, a_+2*(b_-a_)/3, b_]
     ys = [f_(x) for x in xs]
+    best = 0
+    best_y = 0
 
-    # create surrogate cubic (depressed cubic from lagrange polynomial)
-    p, q = depress_cubic_const_a(*make_lagrange_cubic(*(xs+ys)))
-
+    for i in range(max_iter_):
+        roots = cubic_roots(xs, ys)
+        # Find the best candidate
+        root_dist = [max(0, root - xs[3], xs[0] - root) for root in roots]
+        filtered = [root for root in roots if root >= xs[0] and root <= xs[3]]
+        best_index = root_dist.index(min(root_dist))
+        best = roots[best_index]
+        best_y = f_(best)
+        # Check tolerance
+        if abs(best_y) < tol_:
+            return best
+        # Replace one of the points
+        xs.insert(2, best)
+        ys.insert(2, best_y)
+        diff_0 = abs(best - xs[1])
+        diff_4 = abs(best - xs[4])
+        if diff_0 < diff_4:
+            xs.pop(4)
+            ys.pop(4)
+        else:
+            xs.pop(0)
+            ys.pop(0)
+    print(f"Stopped at max iterations\n")
+    return best
 
 
 
@@ -169,9 +222,11 @@ def main():
     # P, Q = [float(v) for v in sys.argv[1:]]
     # print(depressed_cubic_roots(P,Q))
     def a(x):
-        return x
+        return math.sin(x)+.2
     l, h = -1, 1
-    rootfind(a, l, h)
+    root = rootfind(a, l, h)
+    root_v = a(root);
+    print(f"{root}, {root_v}")
 
 
 if __name__ == "__main__":
