@@ -1,8 +1,8 @@
 # Fdb version 4
-["pdflatex"] 1771186270.08006 "h:/CodeQuiz/mat357/proj1/Project1.tex" "Project1.pdf" "Project1" 1771186271.41346 0
-  "Project1.aux" 1771186271 1565 828e75f51f05b0c6be9119e6c8fcd9c6 "pdflatex"
-  "Project1.out" 1771186270 0 d41d8cd98f00b204e9800998ecf8427e "pdflatex"
-  "Project1.tex" 1771186269 8780 95bda7f26a7a292508d2eb075bbff257 ""
+["pdflatex"] 1771186687.27311 "h:/CodeQuiz/mat357/proj1/Project1.tex" "Project1.pdf" "Project1" 1771186688.62372 0
+  "Project1.aux" 1771186688 1565 828e75f51f05b0c6be9119e6c8fcd9c6 "pdflatex"
+  "Project1.out" 1771186688 0 d41d8cd98f00b204e9800998ecf8427e "pdflatex"
+  "Project1.tex" 1771186686 9001 e29a8972c0521357cf3e0755ed8bb5cb ""
   "e:/Program Files (x86)/texlive/2025/texmf-dist/fonts/enc/dvips/base/8r.enc" 1770768654 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "e:/Program Files (x86)/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1770769042 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "e:/Program Files (x86)/texlive/2025/texmf-dist/fonts/tfm/adobe/courier/pcrr7t.tfm" 1770768382 960 379cc0019370a9e0208a0a3f949f847a ""
@@ -107,7 +107,7 @@
   "files/Iter 2.png" 1771180559 31810 dc443abe9d8cf0241fa855b7a2f4c0de ""
   "files/Iter 3.png" 1771180546 33306 8c7971edd7152c7d9583d21ec530b768 ""
   "files/Iter 4.png" 1771180533 33050 b15d7b68f91cf1c55417621721e34f8b ""
-  "h:/CodeQuiz/mat357/proj1/Project1.tex" 1771186269 8780 95bda7f26a7a292508d2eb075bbff257 ""
+  "h:/CodeQuiz/mat357/proj1/Project1.tex" 1771186686 9001 e29a8972c0521357cf3e0755ed8bb5cb ""
   (generated)
   "Project1.aux"
   "Project1.log"
