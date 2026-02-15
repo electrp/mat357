@@ -135,13 +135,43 @@ We then evaluate $P(x)=0$ to get our initial estimate of the root. We then add t
 
 \section*{Analysis \& Results}
 
-
-\vspace{5mm}
 \begin{tabular}{ll}
 iter & average error \\
 \hline
-% [Insert data here]
+1 & 2.002123e-01 \\
+2 & 1.368350e-02 \\
+3 & 9.629506e-04 \\
+4 & 2.087597e-06 \\
+5 & 5.415548e-06 \\
+6 & 7.824911e-07 \\
+7 & 3.914473e-07 \\
+8 & 1.956209e-07 \\
+9 & 9.780938e-08 \\
+10 & 6.520458e-08 \\
+11 & 3.260075e-08 \\
+12 & 1.629884e-08 \\
+13 & 8.147883e-09 \\
+14 & 6.108919e-09 \\
+15 & 3.052640e-09 \\
+16 & 1.524501e-09 \\
+17 & 7.604304e-10 \\
+18 & 3.783958e-10 \\
+19 & 1.873784e-10 \\
+20 & 9.186918e-11 \\
+21 & 4.411471e-11 \\
+22 & 2.023781e-11 \\
 \end{tabular}
-\vspace{5mm}
+
+
+
+Per-function convergence behavior:
+  $x^2 - 2$: converged in 1 iters (too few for order estimate) \newline
+  $x^3 - x - 1$: converged in 1 iters (too few for order estimate) \newline
+  $x - \cos(x)$: 3 iters, avg $|e_(n+1)/e_n| = 0.0003$ \newline
+  $e^x - 3$: 25 iters, avg $|e_(n+1)/e_n| = 149767.4980$ \newline
+  $x^3 - 2x - 5$: converged in 1 iters (too few for order estimate) \newline
+  $\frac{1}{2}x - \cos(2x) - \frac{1}{2}$: 9 iters, avg $|e_(n+1)/e_n| = 21.9493$ \newline
+  $x^5 - x - 1$: 22 iters, avg $|e_(n+1)/e_n| = 29.5083$ \newline
+  $\ln(x) - 1$: 13 iters, avg $|e_(n+1)/e_n| = 29.1842$
 
 \end{document}
