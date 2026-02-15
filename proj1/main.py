@@ -1,5 +1,7 @@
 from typing import Callable
 import math
+import os
+file_path = os.path.dirname(os.path.realpath(__file__))
 
 # a is always 1, returns b, c, d
 def make_lagrange_cubic(x0, x1, x2, x3, y0, y1, y2, y3) -> tuple[float, float, float, float]:
@@ -165,20 +167,74 @@ def cubic_roots(xs, ys, tol_: float=1e-8) -> list[float]:
         return solve_quadratic_formula(b, c, d)
     else:
         p, q = depress_cubic(a, b, c, d)
-        shift = -b / (3 * a)  # <-- the shift back
+        shift = -b / (3 * a)
         return [t + shift for t in depressed_cubic_roots(p, q)]
+
+
+def newton_rootfind(f_: Callable, a_: float, b_: float, max_iter_: int = 100, tol_: float = 1e-12, debug: bool = False) -> tuple[float, int]:
+    """
+    Standard Newton's method with numerical derivative, bracketed.
+    Returns (root, iterations_used).
+    """
+    h = 1e-8
+    # Start from midpoint
+    x = (a_ + b_) / 2
+    
+    for i in range(max_iter_):
+        fx = f_(x)
+        if abs(fx) < tol_:
+            if debug:
+                print(f"  Newton converged at iteration {i}")
+            return x, i + 1
+        
+        # Numerical derivative
+        dfx = (f_(x + h) - f_(x - h)) / (2 * h)
+        
+        if abs(dfx) < 1e-15:
+            # Derivative too small, nudge
+            x = x + h * 100
+            continue
+        
+        x_new = x - fx / dfx
+        
+        # Clamp to bracket
+        x_new = max(a_, min(b_, x_new))
+        
+        # If clamped to boundary, bisect instead
+        if x_new == a_ or x_new == b_:
+            x_new = (a_ + b_) / 2
+            # Tighten bracket
+            if sign(f_(a_)) != sign(fx):
+                b_ = x
+            else:
+                a_ = x
+        
+        x = x_new
+    
+    if debug:
+        print(f"  Newton did not converge in {max_iter_} iterations, best x={x}, f(x)={f_(x):.2e}")
+    return x, max_iter_
 
 
 def rootfind(f_: Callable, a_: float, b_: float, max_iter_: int = 100, tol_: float = 1e-12, debug: bool = True) -> float:
     """
-    given sample function and range [a,b] to search for roots, find a root
+    Cubic-interpolation rootfinder. Also runs Newton's method as comparison.
     """
     import numpy as np
 
     if debug:
         import matplotlib.pyplot as plt
 
-    # get four points
+    # ---- Run Newton as comparison ----
+    newton_root, newton_iters = newton_rootfind(f_, a_, b_, max_iter_=max_iter_, tol_=tol_, debug=debug)
+    newton_val = f_(newton_root)
+    if debug:
+        print(f"=== NEWTON COMPARISON ===")
+        print(f"  Root: {newton_root:.12f}")
+        print(f"  f(root): {newton_val:.2e}")
+        print(f"  Iterations: {newton_iters}")
+        print(f"=========================\n")
+    # ---- Our cubic method ----
     xs = [a_, a_ + (b_ - a_) / 3, a_ + 2 * (b_ - a_) / 3, b_]
     ys = [f_(x) for x in xs]
 
@@ -188,6 +244,9 @@ def rootfind(f_: Callable, a_: float, b_: float, max_iter_: int = 100, tol_: flo
 
     best = 0
     best_y = 0
+
+    method_counts = {"cubic": 0, "newton": 0, "newton_clamped": 0, "bisection": 0}
+    total_iters = 0
 
     for i in range(max_iter_):
         # Sort points by x to keep them ordered
@@ -238,7 +297,11 @@ def rootfind(f_: Callable, a_: float, b_: float, max_iter_: int = 100, tol_: flo
                 best_y = f_(best)
                 used_method = "bisection"
 
+        method_counts[used_method] += 1
+        total_iters = i + 1
+
         if debug:
+            newton_pct = 100 * (method_counts["newton"] + method_counts["newton_clamped"]) / total_iters
             print(f"--- Iter {i} ---")
             print(f"  Method: {used_method.upper()}")
             print(f"  Window: [{xs[0]:.10f}, {xs[3]:.10f}]  size={xs[3] - xs[0]:.2e}")
@@ -248,6 +311,7 @@ def rootfind(f_: Callable, a_: float, b_: float, max_iter_: int = 100, tol_: flo
             print(f"  All roots: {[f'{r:.10f}' for r in roots]}")
             print(f"  In-bounds: {[f'{r:.10f}' for r in filtered]}")
             print(f"  Chosen: x={best:.10f}  f(x)={best_y:.2e}")
+            print(f"  Method stats so far: {dict(method_counts)}  Newton%: {newton_pct:.1f}%")
             print()
 
             fig, axes = plt.subplots(1, 2, figsize=(14, 5))
@@ -272,6 +336,7 @@ def rootfind(f_: Callable, a_: float, b_: float, max_iter_: int = 100, tol_: flo
             ax1.set_xlabel('x')
             ax1.set_ylabel('y')
 
+            newton_pct_str = f"{newton_pct:.1f}%"
             info_text = (
                 f"Iteration: {i}\n"
                 f"Window: [{xs[0]:.8f}, {xs[3]:.8f}]\n"
@@ -282,34 +347,40 @@ def rootfind(f_: Callable, a_: float, b_: float, max_iter_: int = 100, tol_: flo
                 f"\nChosen x: {best:.10f}\n"
                 f"f(x): {best_y:.2e}\n"
                 f"Method: {used_method}\n"
+                f"\nMethod breakdown:\n"
+                f"  cubic: {method_counts['cubic']}\n"
+                f"  newton: {method_counts['newton']}\n"
+                f"  newton_clamped: {method_counts['newton_clamped']}\n"
+                f"  bisection: {method_counts['bisection']}\n"
+                f"  Newton%: {newton_pct_str}\n"
+                f"\nNewton comparison:\n"
+                f"  Newton root: {newton_root:.10f}\n"
+                f"  Newton iters: {newton_iters}\n"
                 f"\nSample points:\n"
             )
             for j, (xi, yi) in enumerate(zip(xs, ys)):
                 info_text += f"  x{j}={xi:.8f}  y{j}={yi:.2e}\n"
 
             ax2.text(0.05, 0.95, info_text, transform=ax2.transAxes,
-                    fontsize=9, verticalalignment='top', fontfamily='monospace')
+                    fontsize=8, verticalalignment='top', fontfamily='monospace')
             ax2.axis('off')
             ax2.set_title('Debug Info')
 
             plt.tight_layout()
-            plt.savefig(f'H:\\CodeQuiz\\mat357\\proj1\\tmp/rootfind_iter_{i:03d}.png', dpi=100)
+            plt.savefig(os.path.join(file_path, f"iter_{i:02d}.png"))
             plt.close()
 
-        # Check tolerance
         if abs(best_y) < tol_:
             if debug:
                 print(f"Converged at iteration {i}")
-            return best
+            break
 
-        # Insert best into sorted position and maintain 4 points with bracket
         xs.append(best)
         ys.append(best_y)
         combined = sorted(zip(xs, ys), key=lambda p: p[0])
         xs = [p[0] for p in combined]
         ys = [p[1] for p in combined]
 
-        # We now have 5 points — drop the one that's least useful
         sign_change_idx = None
         smallest_gap = float('inf')
         for j in range(len(xs) - 1):
@@ -358,6 +429,28 @@ def rootfind(f_: Callable, a_: float, b_: float, max_iter_: int = 100, tol_: flo
             ys[0] = f_(xs[0])
             if debug:
                 print(f"  >> Redistributed left endpoint to {xs[0]:.10f}")
+    else:
+        print(f"Stopped at max iterations")
+        if debug:
+            print(f"Final best: x={best:.10f}, f(x)={best_y:.2e}")
+
+    # Final summary
+    if debug and total_iters > 0:
+        newton_pct = 100 * (method_counts["newton"] + method_counts["newton_clamped"]) / total_iters
+        print(f"\n{'='*50}")
+        print(f"FINAL COMPARISON")
+        print(f"{'='*50}")
+        print(f"Our method:")
+        print(f"  Root:       {best:.12f}")
+        print(f"  f(root):    {best_y:.2e}")
+        print(f"  Iterations: {total_iters}")
+        print(f"  Method breakdown: {dict(method_counts)}")
+        print(f"  Newton fallback%: {newton_pct:.1f}%")
+        print(f"Newton's method:")
+        print(f"  Root:       {newton_root:.12f}")
+        print(f"  f(root):    {newton_val:.2e}")
+        print(f"  Iterations: {newton_iters}")
+        print(f"{'='*50}")
 
     print(f"Stopped at max iterations")
     if debug:
