@@ -199,9 +199,11 @@ INPUT ./files/Iter 4.png
 INPUT ./files/Iter 4.png
 INPUT ./files/Iter 4.png
 INPUT ./files/Iter 4.png
+INPUT e:/Program Files (x86)/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmbx10.tfm
 INPUT Project1.aux
 INPUT ./Project1.out
 INPUT ./Project1.out
+INPUT e:/Program Files (x86)/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb
 INPUT e:/Program Files (x86)/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb
 INPUT e:/Program Files (x86)/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb
 INPUT e:/Program Files (x86)/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb

@@ -135,43 +135,29 @@ We then evaluate $P(x)=0$ to get our initial estimate of the root. We then add t
 
 \section*{Analysis \& Results}
 
-\begin{tabular}{ll}
-iter & average error \\
+% LaTeX table
+
+\begin{table}[h]
+\centering
+\caption{Rootfinding comparison averaged over 10 trials with randomized bounds}
+\begin{tabular}{l c c c c c c}
 \hline
-1 & 2.002123e-01 \\
-2 & 1.368350e-02 \\
-3 & 9.629506e-04 \\
-4 & 2.087597e-06 \\
-5 & 5.415548e-06 \\
-6 & 7.824911e-07 \\
-7 & 3.914473e-07 \\
-8 & 1.956209e-07 \\
-9 & 9.780938e-08 \\
-10 & 6.520458e-08 \\
-11 & 3.260075e-08 \\
-12 & 1.629884e-08 \\
-13 & 8.147883e-09 \\
-14 & 6.108919e-09 \\
-15 & 3.052640e-09 \\
-16 & 1.524501e-09 \\
-17 & 7.604304e-10 \\
-18 & 3.783958e-10 \\
-19 & 1.873784e-10 \\
-20 & 9.186918e-11 \\
-21 & 4.411471e-11 \\
-22 & 2.023781e-11 \\
+ & \multicolumn{2}{c}{Iterations} & \multicolumn{2}{c}{Function Calls} & \multicolumn{2}{c}{Step Type} \\
+\cline{2-3} \cline{4-5} \cline{6-7}
+Function & Cubic & Newton & Cubic & Newton & Cubic & Bisect \\
+\hline
+$sin(x)+0.2$ & 3.0 & 3.0 & 7.0 & 10.0 & 3.0 & 0.0 \\
+$x^3 - x - 2$ & 1.0 & 3.7 & 5.0 & 12.1 & 1.0 & 0.0 \\
+$cos(x) - x$ & 3.7 & 4.0 & 7.7 & 13.0 & 3.5 & 0.2 \\
+$e^x - 3$ & 4.0 & 3.8 & 8.0 & 12.4 & 4.0 & 0.0 \\
+$x^5 - x - 1$ & 33.9 & 5.8 & 36.7 & 18.4 & 3.5 & 30.4 \\
+$ln(x) - 1$ & 5.0 & 4.0 & 9.0 & 13.0 & 5.0 & 0.0 \\
+$tan(x) - 2x$ & 100.0 & 8.0 & 74.0 & 25.2 & 35.0 & 35.0 \\
+$x^2 - 2$ & 1.0 & 3.6 & 5.0 & 11.8 & 1.0 & 0.0 \\
+\hline
+\textbf{Average} & 18.9 & 4.5 & 19.1 & 14.5 & 7.0 & 8.2 \\
+\hline
 \end{tabular}
-
-
-
-Per-function convergence behavior:
-  $x^2 - 2$: converged in 1 iters (too few for order estimate) \newline
-  $x^3 - x - 1$: converged in 1 iters (too few for order estimate) \newline
-  $x - \cos(x)$: 3 iters, avg $|e_(n+1)/e_n| = 0.0003$ \newline
-  $e^x - 3$: 25 iters, avg $|e_(n+1)/e_n| = 149767.4980$ \newline
-  $x^3 - 2x - 5$: converged in 1 iters (too few for order estimate) \newline
-  $\frac{1}{2}x - \cos(2x) - \frac{1}{2}$: 9 iters, avg $|e_(n+1)/e_n| = 21.9493$ \newline
-  $x^5 - x - 1$: 22 iters, avg $|e_(n+1)/e_n| = 29.5083$ \newline
-  $\ln(x) - 1$: 13 iters, avg $|e_(n+1)/e_n| = 29.1842$
+\end{table}
 
 \end{document}

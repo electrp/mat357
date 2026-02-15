@@ -172,74 +172,89 @@ def sample_polynomial(x, a, b, c, d):
 
 
 def rootfind(f_:Callable, a_:float, b_:float, max_iter_:int=100, tol_:float=1e-12) -> tuple[float, list[float]]:
-    """
-    Returns (root, errors_per_iteration)
-    """
-    xs = [a_, a_+(b_-a_)/3, a_+2*(b_-a_)/3, b_]
-    ys = [f_(x) for x in xs]
+    calls = 0
+    def cf(x):
+        nonlocal calls
+        calls += 1
+        return f_(x)
+
+    cubic_steps = 0
+    bisect_steps = 0
+
+    # get four points
+    xs = [a_, a_ + (b_ - a_) / 3, a_ + 2 * (b_ - a_) / 3, b_]
+    ys = [cf(x) for x in xs]
     best = 0
     best_y = 0
     last_best = None
-    cubic_count = 0
-    bisect_count = 0
-    errors = []
 
     for i in range(max_iter_):
+        # Sort xs and ys so it goes furthest on the negative side to furthest on the positive side
         xs, ys = zip(*sorted(zip(xs, ys), key=lambda p: p[0]))
         xs, ys = list(xs), list(ys)
 
-        # Catch in case bounds are bad, hope we can brute force it
-        try:
-            a, b, c, d = make_lagrange_cubic(*(xs+ys))
-            roots = cubic_roots(a, b, c, d)
-            filtered = [root for root in roots if root >= xs[0] and root <= xs[-1] and abs(sample_polynomial(root, a, b, c, d)) < tol_ and (last_best is None or abs(root - last_best) > tol_)]
-        except Exception as e:
-            print(f"Error in cubic root finding: {e}")
-            filtered = []
+        a, b, c, d = make_lagrange_cubic(*(xs + ys))
+        roots = cubic_roots(a, b, c, d)
+
+        # Filter the roots to meet the following:
+        #   Root is within the range of our xs
+        #   Root of polynomial is within a tolerance of being a root
+        #   Root is not too close to the last best root (to prevent loops)
+        filtered = [r for r in roots
+                     if xs[0] <= r <= xs[-1]
+                     and abs(sample_polynomial(r, a, b, c, d)) < tol_
+                     and (last_best is None or abs(r - last_best) > tol_)]
 
         if len(filtered):
             best = filtered[0]
-            cubic_count += 1
+            cubic_steps += 1
         else:
+            # If no candidate roots are found we bisect the closest positive and negative points
             pos = [(x, y) for x, y in zip(xs, ys) if y > 0]
             neg = [(x, y) for x, y in zip(xs, ys) if y < 0]
             if not pos or not neg:
-                errors.append(abs(best_y))
                 break
-            min_pos = min(pos)
-            min_neg = max(neg)
+            # Get closest positive and negative points and bisect
+            min_pos = min(pos, key=lambda p: abs(p[0]))
+            min_neg = min(neg, key=lambda p: abs(p[0]))
             best = (min_pos[0] + min_neg[0]) / 2
-            bisect_count += 1
+            bisect_steps += 1
 
-        best_y = f_(best)
-        errors.append(abs(best_y))
+        best_y = cf(best)
 
+        # Check tolerance
         if abs(best_y) < tol_:
-            return best, errors
+            return best, i + 1, calls, cubic_steps, bisect_steps
 
+        # Replace one of the points
         xs.insert(2, best)
         ys.insert(2, best_y)
 
+        # Remove the nearest point on both sides of the root
         pos = [(x, y) for x, y in zip(xs, ys) if y > 0]
         neg = [(x, y) for x, y in zip(xs, ys) if y < 0]
         if not pos or not neg:
-            continue
-        min_pos = min(pos)
-        min_neg = max(neg)
+            print("All points on one side, this should not happen")
+            break
+        min_pos = min(pos, key=lambda p: abs(p[0]))
+        min_neg = min(neg, key=lambda p: abs(p[0]))
 
-        filtered_xs, filtered_ys = zip(*[(x, y) for x, y in zip(xs, ys) if (x, y) != min_pos and (x, y) != min_neg])
-        furthest = max(zip(filtered_xs, filtered_ys), key=lambda p: abs(p[1]))
+        # get xs and ys without the closest pos and neg
+        filtered_pairs = [(x, y) for x, y in zip(xs, ys) if (x, y) != min_pos and (x, y) != min_neg]
+        # Get furthest point in filtered list
+        furthest = max(filtered_pairs, key=lambda p: abs(p[0]))
+        # Remove furthest point
         xs.remove(furthest[0])
         ys.remove(furthest[1])
 
         last_best = best
 
-    return best, errors
+    return best, max_iter_, calls, cubic_steps, bisect_steps
 
 
 if __name__ == "__main__":
     def a(x):
         return math.cos(x) - x
     l, h = 0, 2
-    root, errs = rootfind(a, l, h)
-    print(f"Root: {root}, f(root)={a(root)}, iters={len(errs)}")
+    root, iters, calls, c_steps, b_steps = rootfind(a, l, h)
+    print(f"Root: {root}, f(root)={a(root)}, iters={iters}, calls={calls}, c_steps={c_steps}, b_steps={b_steps}")
