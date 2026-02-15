@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2026.2.10)  15 FEB 2026 12:18
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2026.2.10)  15 FEB 2026 12:21
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -346,30 +346,30 @@ File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
 <files/Iter 0.png, id=21, 716.6775pt x 497.86pt>
 File: files/Iter 0.png Graphic file (type png)
 <use files/Iter 0.png>
-Package pdftex.def Info: files/Iter 0.png  used on input line 85.
+Package pdftex.def Info: files/Iter 0.png  used on input line 83.
 (pdftex.def)             Requested size: 111.59912pt x 77.52454pt.
 <files/Iter 1.png, id=22, 718.685pt x 497.86pt>
 File: files/Iter 1.png Graphic file (type png)
 <use files/Iter 1.png>
-Package pdftex.def Info: files/Iter 1.png  used on input line 92.
+Package pdftex.def Info: files/Iter 1.png  used on input line 90.
 (pdftex.def)             Requested size: 111.59912pt x 77.30423pt.
 <files/Iter 2.png, id=23, 721.69624pt x 493.845pt>
 File: files/Iter 2.png Graphic file (type png)
 <use files/Iter 2.png>
-Package pdftex.def Info: files/Iter 2.png  used on input line 99.
+Package pdftex.def Info: files/Iter 2.png  used on input line 97.
 (pdftex.def)             Requested size: 111.59912pt x 76.36432pt.
 <files/Iter 3.png, id=24, 735.74875pt x 494.84875pt>
 File: files/Iter 3.png Graphic file (type png)
 <use files/Iter 3.png>
-Package pdftex.def Info: files/Iter 3.png  used on input line 109.
+Package pdftex.def Info: files/Iter 3.png  used on input line 107.
 (pdftex.def)             Requested size: 111.59912pt x 75.05469pt.
 <files/Iter 4.png, id=25, 543.53062pt x 372.64218pt>
 File: files/Iter 4.png Graphic file (type png)
 <use files/Iter 4.png>
-Package pdftex.def Info: files/Iter 4.png  used on input line 116.
+Package pdftex.def Info: files/Iter 4.png  used on input line 114.
 (pdftex.def)             Requested size: 111.59912pt x 76.51154pt.
  [3 <./files/Iter 0.png (PNG copy)> <./files/Iter 1.png (PNG copy)> <./files/Iter 2.png (PNG copy)> <./files/Iter 3.png (PNG copy)> <./files/Iter 4.png>]
-Overfull \hbox (53.4752pt too wide) in paragraph at lines 144--164
+Overfull \hbox (53.4752pt too wide) in paragraph at lines 142--162
  [][] 
  []
 

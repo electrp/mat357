@@ -72,14 +72,12 @@ def rootfind(f_:Callable, min:float, max:float) -> float:
 
 \section*{Explanation}
 
-% Formatted link https://www.desmos.com/calculator/atqa25yh0u
 You can use an interactive version in desmos with 3 points: \url{https://www.desmos.com/calculator/atqa25yh0u} to see how the method works. Blue is first step and red is the second.
 
-% Displays images (Iter [0-4].png)
 Here is also our method taking on a particularly challenging function. You can see it samples really close then slowly moves the leftmost point inwards. This is a larger issue that leads to some cases not performing as well as we would like. But when it doesn't do this it can one shot some examples
 \begin{figure}[htbp]
     \centering
-    % --- Top Row: 3 Images ---
+    % --- Top Row ---
     \begin{subfigure}[b]{0.31\textwidth}
         \centering
         \includegraphics[width=\linewidth]{files/Iter 0.png}
@@ -101,16 +99,16 @@ Here is also our method taking on a particularly challenging function. You can s
         \label{fig:iter2}
     \end{subfigure}
     
-    \vspace{0.5cm} % Add vertical space between rows
+    \vspace{0.5cm}
     
-    % --- Bottom Row: 2 Images (Centered) ---
+    % --- Bottom Row ---
     \begin{subfigure}[b]{0.31\textwidth}
         \centering
         \includegraphics[width=\linewidth]{files/Iter 3.png}
         \caption{Iteration 3}
         \label{fig:iter3}
     \end{subfigure}
-    \hspace{0.5cm} % Add horizontal space between the bottom two
+    \hspace{0.5cm} 
     \begin{subfigure}[b]{0.31\textwidth}
         \centering
         \includegraphics[width=\linewidth]{files/Iter 4.png}
