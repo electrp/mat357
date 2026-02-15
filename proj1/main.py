@@ -156,21 +156,19 @@ def solve_quadratic_formula(a, b, c) -> list[float]:
     return [b1 + variant, b1 - variant]
 
 
-def cubic_roots(xs, ys, tol_: float=1e-8) -> list[float]:
-    # create surrogate cubic (depressed cubic from lagrange polynomial)
-    cubic = make_lagrange_cubic(*(xs+ys))
-    # Check to make sure it's not of a smaller degree, if we don't it can explode
-    if abs(cubic[0]) < tol_:
-        if abs(cubic[1]) < tol_:
-            # Solve linear
-            return [-cubic[3]/cubic[2]]
-        # Solve quadratic
-        return solve_quadratic_formula(cubic[1], cubic[2], cubic[3])
-    else:
-        # Cubic if it matches best
-        p, q = depress_cubic(*cubic)
-        return depressed_cubic_roots(p, q)
 
+def cubic_roots(a, b, c, d, tol_: float=1e-8) -> list[float]:
+    if abs(a) < tol_:
+        if abs(b) < tol_:
+            return [-d/c]
+        return solve_quadratic_formula(b, c, d)
+    else:
+        p, q = depress_cubic(a, b, c, d)
+        shift = -b / (3 * a)
+        return [t + shift for t in depressed_cubic_roots(p, q)]
+
+def sample_polynomial(x, a, b, c, d):
+    return a*x**3 + b*x**2 + c*x + d
 
 
 # implement this
@@ -179,54 +177,97 @@ def rootfind(f_:Callable, a_:float, b_:float, max_iter_:int=100, tol_:float=1e-1
     given sample function and range [a,b] to search for roots, find a root
     """
 
-    """
-    ...
-    """
-
-
     # get four points
     xs = [a_, a_+(b_-a_)/3, a_+2*(b_-a_)/3, b_]
     ys = [f_(x) for x in xs]
     best = 0
     best_y = 0
 
+    last_best = None
+
+    cubic_count = 0
+    bisect_count = 0
+
     for i in range(max_iter_):
-        roots = cubic_roots(xs, ys)
-        # Find the best candidate
-        root_dist = [max(0, root - xs[3], xs[0] - root) for root in roots]
-        filtered = [root for root in roots if root >= xs[0] and root <= xs[3]]
-        best_index = root_dist.index(min(root_dist))
-        best = roots[best_index]
+        # Sort xs and ys so it goes furthest on the negative side to furthest on the positive side
+        xs, ys = zip(*sorted(zip(xs, ys), key=lambda p: p[1]))
+        xs, ys = list(xs), list(ys)
+
+        #print(f"Iteration {i}: xs={xs}, ys={ys}")
+
+        a, b, c, d = make_lagrange_cubic(*(xs+ys))
+        roots = cubic_roots(a, b, c, d)
+        # Filter the roots to meet the following:
+        #   Root is within the range of our xs
+        #   Root of polynomial is within a tolerance of being a root
+        #   Root is not too close to the last best root (to prevent loops)
+        filtered = [root for root in roots if root >= xs[0] and root <= xs[-1] and abs(sample_polynomial(root, a, b, c, d)) < tol_ and (last_best is None or abs(root - last_best) > tol_)]
+        if len(filtered):
+            best = filtered[0]
+            cubic_count += 1
+        else: # If no candidate roots are found we bisect the closest positive and negative points to find a new candidate root
+            print(f"Using Backup Bisection Method at iteration {i} with xs={xs} and ys={ys}")
+            # Get closest positive and negative points and bisect
+            min_pos = min([(x, y) for x, y in zip(xs, ys) if y > 0])
+            min_neg = max([(x, y) for x, y in zip(xs, ys) if y < 0])
+            best = (min_pos[0] + min_neg[0]) / 2
+            bisect_count += 1
+
         best_y = f_(best)
         # Check tolerance
         if abs(best_y) < tol_:
+            print(f"Cubic: found root at {best} with f(root)={best_y} in {i+1} iterations (cubic_count={cubic_count}, bisect_count={bisect_count})")
             return best
         # Replace one of the points
         xs.insert(2, best)
         ys.insert(2, best_y)
-        diff_0 = abs(best - xs[1])
-        diff_4 = abs(best - xs[4])
-        if diff_0 < diff_4:
-            xs.pop(4)
-            ys.pop(4)
-        else:
-            xs.pop(0)
-            ys.pop(0)
+
+        # Remove the nearest point on both sides of the root
+        min_pos = min([(x, y) for x, y in zip(xs, ys) if y > 0])
+        min_neg = max([(x, y) for x, y in zip(xs, ys) if y < 0])
+
+        # get xs and ys without the closest pos and neg
+        filtered_xs, filtered_ys = zip(*[(x, y) for x, y in zip(xs, ys) if (x, y) != min_pos and (x, y) != min_neg])
+        # Get furthest point in filtered list
+        furthest = max(zip(filtered_xs, filtered_ys), key=lambda p: abs(p[1]))
+        # Remove furthest point and add it back to the list
+        xs.remove(furthest[0])
+        ys.remove(furthest[1])
+
+        last_best = best
+
     print(f"Stopped at max iterations\n")
     return best
 
-
+def newton_rootfind(f, x0, max_iter=100, tol=1e-12, h=1e-8):
+    x = x0
+    for i in range(max_iter):
+        fx = f(x)
+        if abs(fx) < tol:
+            print(f"Newton: found root at {x} with f(root)={fx} in {i+1} iterations")
+            return x
+        dfx = (f(x + h) - f(x - h)) / (2 * h)
+        if abs(dfx) < 1e-15:
+            print(f"Newton: derivative near zero, stopping at {x} after {i+1} iterations")
+            break
+        x = x - fx / dfx
+    else:
+        print(f"Newton: stopped at max iterations, x={x}, f(x)={f(x)}")
+    return x
 
 def main():
     # import sys
     # P, Q = [float(v) for v in sys.argv[1:]]
     # print(depressed_cubic_roots(P,Q))
     def a(x):
-        return math.sin(x)+.2
-    l, h = -1, 1
+        return 1/2*x-math.cos(2*x)-0.5
+    l, h = -5, 4
     root = rootfind(a, l, h)
-    root_v = a(root);
-    print(f"{root}, {root_v}")
+    root_v = a(root)
+    #print(f"{root}, {root_v}")
+
+    # Compare to newton's method
+    newton_root = newton_rootfind(a, (l+h)/2)
 
 
 if __name__ == "__main__":
