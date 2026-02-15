@@ -1,5 +1,6 @@
 from typing import Callable
 import math
+import random
 
 # a is always 1, returns b, c, d
 def make_lagrange_cubic(x0, x1, x2, x3, y0, y1, y2, y3) -> tuple[float, float, float, float]:
@@ -58,24 +59,22 @@ def depress_cubic_const_a(b, c, d) -> tuple[float, float]:
     return c1, d1 
 
 
-# Gives c and d
+# Gives c, d
 def depress_cubic(a, b, c, d) -> tuple[float, float]:
-    # Prevents div by 0 cases in linear equations
-    if a == 0:
-        a = .000000001 # 
     # Scale so a == 1, x = t - b/3
-    b1 = b / a
-    c1 = c / a
-    d1 = d / a
-    return depress_cubic_const_a(b1, c1, d1)
+    # b1 = b / a
+    # c1 = c / a
+    # d1 = d / a
+    # return depress_cubic_const_a(b1, c1, d1)
 
-    # h1 = b /(3 * a)
-    # h2 = h1 * h1
-    # h3 = h1 * h2
+    h1 = b /(3 * a)
+    h2 = h1 * h1
+    h3 = h1 * h2
 
-    # c1 = -h2 * 3 + c / a
-    # d1 = 2 * h3 - c * b / (3 * a * a) + d / a
-    # return c1, d1
+    c1 = c - b * b / (3 * a)
+    d1 = 2 * h3 - c * b / (3 * a * a) + d / a
+    d1 = d + 2 * b * b * b / (27 * a * a) - (b * c) / (3 * a)
+    return c1 / a, d1 / a
 
 
 
@@ -159,6 +158,7 @@ def solve_quadratic_formula(a, b, c) -> list[float]:
 def cubic_roots(xs, ys, tol_: float=1e-8) -> list[float]:
     # create surrogate cubic (depressed cubic from lagrange polynomial)
     cubic = make_lagrange_cubic(*(xs+ys))
+    print(f"cubic: {cubic}")
     # Check to make sure it's not of a smaller degree, if we don't it can explode
     if abs(cubic[0]) < tol_:
         if abs(cubic[1]) < tol_:
@@ -169,8 +169,63 @@ def cubic_roots(xs, ys, tol_: float=1e-8) -> list[float]:
     else:
         # Cubic if it matches best
         p, q = depress_cubic(*cubic)
-        return depressed_cubic_roots(p, q)
+        print(f"depressed: {p}, {q}")
+        depressed_roots = depressed_cubic_roots(p, q)
+        return [v - (cubic[1] / (3 * cubic[0])) for v in depressed_roots]
 
+
+def distance_from_bounds(low, high, val):
+    return min(0, val - high, low - val)
+
+# Returns a new xs and ys 
+# This was a very messy way to do this, but the value selection can change convergance
+# greatly. It would take far too long to find the best way to do this
+def adjust_bounds(xs, ys, roots, fn) -> tuple[list[float], list[float]]:
+    # Filter into negative and positive
+    y_pos = [v for v in ys if v >= 0]
+    y_neg = [v for v in ys if v < 0]
+
+    # Calculate our best bounds
+    y_pos_bound = None
+    y_neg_bound = None
+
+    if len(y_pos) == 0:
+        y_pos_bound = max(ys)
+    else:
+        y_pos_bound = min(y_pos)
+    if len(y_neg) == 0:
+        y_neg_bound = min(ys)
+    else:
+        y_neg_bound = max(y_neg)
+
+    y_pos_bound_idx = ys.index(y_pos_bound)
+    y_neg_bound_idx = ys.index(y_neg_bound)
+    y_pos_bound_x = xs[y_pos_bound_idx]
+    y_neg_bound_x = xs[y_neg_bound_idx]
+    x_min_bound = min(y_pos_bound_x, y_neg_bound_x)
+    x_max_bound = max(y_pos_bound_x, y_neg_bound_x)
+
+    # Get our remaining indices
+    remaining = [0, 1, 2, 3]
+    remaining.remove(y_pos_bound_idx)
+    remaining.remove(y_neg_bound_idx)
+
+    r0_y = ys[remaining[0]]
+    r1_y = ys[remaining[1]]
+
+    # Pick our closest one
+    r_selected = None
+    if abs(r0_y) < abs(r1_y):
+        r_selected = remaining[0]
+    else:
+        r_selected = remaining[1]
+
+    # Select our root (dosn't matter too much right now)
+    root = roots[0]
+
+    return \
+        [y_pos_bound_x, y_neg_bound_x, xs[r_selected], root], \
+        [y_pos_bound, y_neg_bound, ys[r_selected], fn(root)]
 
 
 # implement this
@@ -187,33 +242,35 @@ def rootfind(f_:Callable, a_:float, b_:float, max_iter_:int=100, tol_:float=1e-1
     # get four points
     xs = [a_, a_+(b_-a_)/3, a_+2*(b_-a_)/3, b_]
     ys = [f_(x) for x in xs]
-    best = 0
-    best_y = 0
+
+    best_x = None
+    best_y = None
 
     for i in range(max_iter_):
+        # Get roots
         roots = cubic_roots(xs, ys)
-        # Find the best candidate
-        root_dist = [max(0, root - xs[3], xs[0] - root) for root in roots]
-        filtered = [root for root in roots if root >= xs[0] and root <= xs[3]]
-        best_index = root_dist.index(min(root_dist))
-        best = roots[best_index]
-        best_y = f_(best)
-        # Check tolerance
-        if abs(best_y) < tol_:
-            return best
-        # Replace one of the points
-        xs.insert(2, best)
-        ys.insert(2, best_y)
-        diff_0 = abs(best - xs[1])
-        diff_4 = abs(best - xs[4])
-        if diff_0 < diff_4:
-            xs.pop(4)
-            ys.pop(4)
-        else:
-            xs.pop(0)
-            ys.pop(0)
-    print(f"Stopped at max iterations\n")
-    return best
+        print(f"roots: {roots}")
+
+        # Check and see if any of our roots are good
+        for root in roots:
+            root_y = abs(f_(root))
+            if best_y == None or root_y < best_y:
+                best_y = root_y
+                best_x = root
+        if best_y < tol_:
+            print(f"steps: {i}")
+            return best_x
+
+        print(f"{xs}")
+        print(f"{ys}")
+        # Reset bounds and continue
+        xs, ys = adjust_bounds(xs, ys, roots, f_)
+        print(f"{xs}")
+        print(f"{ys}")
+        print("____")
+
+    print(f"Stopped at max iterations")
+    return best_x
 
 
 
@@ -222,8 +279,8 @@ def main():
     # P, Q = [float(v) for v in sys.argv[1:]]
     # print(depressed_cubic_roots(P,Q))
     def a(x):
-        return math.sin(x)+.2
-    l, h = -1, 1
+        return 19 * math.sin(x + 2) + x/2
+    l, h = -3, 1
     root = rootfind(a, l, h)
     root_v = a(root);
     print(f"{root}, {root_v}")
