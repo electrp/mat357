@@ -367,7 +367,7 @@ def rootfind(f_: Callable, a_: float, b_: float, max_iter_: int = 100, tol_: flo
             ax2.set_title('Debug Info')
 
             plt.tight_layout()
-            plt.savefig(os.path.join(file_path, f"iter_{i:02d}.png"))
+            plt.savefig(os.path.join(file_path, f"tmp/iter_{i:02d}.png"))
             plt.close()
 
         if abs(best_y) < tol_:
