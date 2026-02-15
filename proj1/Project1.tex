@@ -1,0 +1,147 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,euscript}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumerate}
+\usepackage{amsfonts}
+\usepackage{amscd}
+\usepackage{courier}
+\usepackage{verbatim}
+\usepackage{fancyvrb}
+\usepackage{xurl}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{subcaption}
+
+\begin{document}
+
+\title{Project 1: Root Finding via Lagrange Polynomial Interpolation}
+\date{\today}
+\author{Max Ortman \and Teammate 1 \and Teammate 2} 
+
+\maketitle
+
+\section*{The Algorithm}
+
+Each step we create a Lagrange Polynomial using four sampled points. We then evaluate the roots of that polynomial and add whatever point is closest to zero as a new sampled point. We then remove the point with the largest $x$ value while making sure there is at least one point on each side of zero. This process is repeated until we have reached the desired number of iterations or the error is sufficiently small. Our method assumes that a range that has points on either side of zero is given, and the function only crosses zero once in that range.
+
+The code is too long to fit in the doc so please check out the attached main.py file for the implementation as we handle edge cases. But the sudo code is as follows:
+
+\pagebreak
+\begin{Verbatim}
+def rootfind(f_:Callable, min:float, max:float) -> float:
+  # get four points
+  points = [min, min+(max-min)/3, min+2*(max-min)/3, max]
+
+  cubic_count = 0
+  bisect_count = 0
+
+  for i in range(max_iter_):
+      a, b, c, d = make_lagrange_cubic(points)
+      roots = cubic_roots(a, b, c, d)
+
+      # Filter the roots to meet the following:
+      #  Root is within the range of points
+      #  Root of polynomial is within a tolerance of being a root
+      #  Root is not too close to the last best root (to prevent loops)
+      canidate = get_candidate(roots, points)
+      if canidate is not None:
+        best = canidate
+      else: 
+        # If no candidate roots are found we bisect the closest 
+        #  positive and negative points to find a new candidate root
+        best = (min_pos[0] + min_neg[0]) / 2
+
+      # Sample new point and add to list
+      best_y = f_(best)
+      
+      # Return if within tolerance
+      if abs(best_y) < tol_:
+        return best
+      
+      # Add point
+      points += (best, best_y)
+
+      # Remove the nearest point on both sides of the root
+
+      # Get xs and ys without the closest pos and neg to keep bounds
+      filtered_points = [points not in (min_pos, min_neg)]
+      furthest = furthest_point(filtered_points, best)
+      points.remove(furthest)
+\end{Verbatim}
+
+\section*{Explanation}
+
+% Formatted link https://www.desmos.com/calculator/atqa25yh0u
+You can use an interactive version in desmos with 3 points: \url{https://www.desmos.com/calculator/atqa25yh0u} to see how the method works. Blue is first step and red is the second.
+
+% Displays images (Iter [0-4].png)
+Here is also our method taking on a particularly challenging function. You can see it samples really close then slowly moves the leftmost point inwards. This is a larger issue that leads to some cases not performing as well as we would like. But when it doesn't do this it can one shot some examples
+\begin{figure}[htbp]
+    \centering
+    % --- Top Row: 3 Images ---
+    \begin{subfigure}[b]{0.31\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{files/Iter 0.png}
+        \caption{Iteration 0}
+        \label{fig:iter0}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.31\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{files/Iter 1.png}
+        \caption{Iteration 1}
+        \label{fig:iter1}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.31\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{files/Iter 2.png}
+        \caption{Iteration 2}
+        \label{fig:iter2}
+    \end{subfigure}
+    
+    \vspace{0.5cm} % Add vertical space between rows
+    
+    % --- Bottom Row: 2 Images (Centered) ---
+    \begin{subfigure}[b]{0.31\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{files/Iter 3.png}
+        \caption{Iteration 3}
+        \label{fig:iter3}
+    \end{subfigure}
+    \hspace{0.5cm} % Add horizontal space between the bottom two
+    \begin{subfigure}[b]{0.31\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{files/Iter 4.png}
+        \caption{Iteration 4}
+        \label{fig:iter4}
+    \end{subfigure}
+    
+    \caption{Visualization of the method on a challenging function. It samples closely (blue) and moves the leftmost point inwards (red). Note the performance in later iterations.}
+    \label{fig:method_steps}
+\end{figure}
+
+To estimate the zero for this function, we use sampled points to construct a Lagrange Polynomial. The basis polynomials are defined as:
+
+$$ L_i(x) = \prod_{j \ne i} \frac{(x - x_j)}{(x_i - x_j)} $$
+
+Using these basis functions, the unique polynomial of degree $n$ that passes through all $n+1$ points is:
+
+$$ P(x) = \sum_i y_i L_i(x) $$
+
+To start our method we sample the beginning, end, and middle 2 points. This gives us a set of 4 points to construct our Lagrange Polynomial.
+We then evaluate $P(x)=0$ to get our initial estimate of the root. We then add that as a middle point and remove the point with the largest $x$ value while making sure there is at least one point on each side of zero. This process is repeated until we have reached the desired number of iterations or the error is sufficiently small.
+
+\section*{Analysis \& Results}
+
+
+\vspace{5mm}
+\begin{tabular}{ll}
+iter & average error \\
+\hline
+% [Insert data here]
+\end{tabular}
+\vspace{5mm}
+
+\end{document}
